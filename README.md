@@ -1,4 +1,4 @@
-# 🍕 FOODY - Food Delivery Website
+<img width="1919" height="994" alt="Screenshot 2026-04-18 100115" src="https://github.com/user-attachments/assets/689e0171-7ccb-4d91-8c21-0c6ce33da2b0" /># 🍕 FOODY - Food Delivery Website
 
 A modern full-stack food delivery web application built using the MERN stack. FOODY allows users to browse food items, manage carts, and place orders through a smooth and responsive interface.
 
@@ -98,7 +98,9 @@ JWT_SECRET=your_secret_key
 
 ## 📸 Screenshots
 
-🚧 Screenshots coming soon...
+🚧 <img width="1919" height="994" alt="Screenshot 2026-04-18 100115" src="https://github.com/user-attachments/assets/655dd228-c990-46f7-9717-ca99184c1ae1" />
+
+
 
 ---
 
