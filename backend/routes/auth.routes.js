@@ -1,9 +1,11 @@
 import express from "express"
-import { googleAuth, resetPassword, sendOtp, signIn, signOut, signUp, verifyOtp } from "../controllers/auth.controllers.js"
+import { googleAuth, resetPassword, sendOtp, sendSignupOtp, signIn, signOut, signUp, verifyOtp, verifySignupOtp } from "../controllers/auth.controllers.js"
 
 const authRouter=express.Router()
 
 authRouter.post("/signup",signUp)
+authRouter.post("/send-signup-otp",sendSignupOtp)
+authRouter.post("/verify-signup-otp",verifySignupOtp)
 authRouter.post("/signin",signIn)
 authRouter.get("/signout",signOut)
 authRouter.post("/send-otp",sendOtp)

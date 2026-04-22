@@ -1,6 +1,26 @@
 import Item from "../models/item.model.js";
+import Order from "../models/order.model.js";
 import Shop from "../models/shop.model.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
+
+const refreshItemRating = async (itemId) => {
+    const item = await Item.findById(itemId)
+    if (!item) {
+        return null
+    }
+
+    const reviews = item.reviews.filter((review) => review.rating)
+    const count = reviews.length
+    const average = count
+        ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / count
+        : 0
+
+    item.rating.average = Number(average.toFixed(1))
+    item.rating.count = count
+    await item.save()
+
+    return item
+}
 
 export const addItem = async (req, res) => {
     try {
@@ -130,24 +150,50 @@ export const getItemsByShop=async (req,res) => {
 export const searchItems=async (req,res) => {
     try {
         const {query,city}=req.query
-        if(!query || !city){
-            return null
+        const trimmedQuery = (query || "").trim()
+        if(!trimmedQuery){
+            return res.status(200).json([])
         }
-        const shops=await Shop.find({
-            city:{$regex:new RegExp(`^${city}$`, "i")}
-        }).populate('items')
-        if(!shops){
-            return res.status(400).json({message:"shops not found"})
-        }
-        const shopIds=shops.map(s=>s._id)
-        const items=await Item.find({
-            shop:{$in:shopIds},
-            $or:[
-              {name:{$regex:query,$options:"i"}},
-              {category:{$regex:query,$options:"i"}}  
-            ]
 
-        }).populate("shop","name image")
+        const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        const textRegexFilter = [
+            { name: { $regex: escapedQuery, $options: "i" } },
+            { category: { $regex: escapedQuery, $options: "i" } },
+            { foodType: { $regex: escapedQuery, $options: "i" } }
+        ]
+
+        const cityFilter = city ? { city: { $regex: new RegExp(`^${city}$`, "i") } } : {}
+        const cityScopedShops = await Shop.find(cityFilter).select("_id")
+        const cityScopedShopIds = cityScopedShops.map((shop) => shop._id)
+
+        const shopNameMatched = await Shop.find({
+            ...cityFilter,
+            name: { $regex: escapedQuery, $options: "i" }
+        }).select("_id")
+        const shopNameMatchedIds = shopNameMatched.map((shop) => shop._id)
+
+        const searchFilter = {
+            $or: [
+                ...textRegexFilter,
+                ...(shopNameMatchedIds.length ? [{ shop: { $in: shopNameMatchedIds } }] : [])
+            ]
+        }
+
+        let scopedItems = []
+        if (city) {
+            if (cityScopedShopIds.length > 0) {
+                scopedItems = await Item.find({
+                    shop: { $in: cityScopedShopIds },
+                    ...searchFilter
+                }).populate("shop", "name image city")
+            }
+
+            if (scopedItems.length > 0) {
+                return res.status(200).json(scopedItems)
+            }
+        }
+
+        const items = await Item.find(searchFilter).populate("shop", "name image city")
 
         return res.status(200).json(items)
 
@@ -174,15 +220,106 @@ export const rating=async (req,res) => {
               return res.status(400).json({message:"item not found"})
         }
 
-        const newCount=item.rating.count + 1
-        const newAverage=(item.rating.average*item.rating.count + rating)/newCount
-
-        item.rating.count=newCount
-        item.rating.average=newAverage
+        item.reviews.push({
+            user: req.userId,
+            rating,
+            comment: ""
+        })
         await item.save()
+        await refreshItemRating(itemId)
 return res.status(200).json({rating:item.rating})
 
     } catch (error) {
          return res.status(500).json({ message: `rating error ${error}` })
+    }
+}
+
+export const addReview = async (req, res) => {
+    try {
+        const { orderId, shopOrderId, itemId, rating, comment } = req.body
+
+        if (!orderId || !shopOrderId || !itemId || !rating) {
+            return res.status(400).json({ message: "orderId, shopOrderId, itemId and rating are required" })
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ message: "rating must be between 1 to 5" })
+        }
+
+        const order = await Order.findById(orderId)
+        if (!order) {
+            return res.status(404).json({ message: "order not found" })
+        }
+        if (String(order.user) !== String(req.userId)) {
+            return res.status(403).json({ message: "you are not allowed to review this order" })
+        }
+
+        const shopOrder = order.shopOrders.id(shopOrderId)
+        if (!shopOrder) {
+            return res.status(404).json({ message: "shop order not found" })
+        }
+        if (shopOrder.status !== "delivered") {
+            return res.status(400).json({ message: "you can review only delivered items" })
+        }
+
+        const orderItem = shopOrder.shopOrderItems.find((item) => (
+            String(item.item?._id || item.item) === String(itemId)
+        ))
+        if (!orderItem) {
+            return res.status(404).json({ message: "item not found in this order" })
+        }
+
+        orderItem.review = {
+            rating,
+            comment: (comment || "").trim(),
+            reviewedAt: new Date()
+        }
+        await order.save()
+
+        const item = await Item.findById(itemId)
+        if (!item) {
+            return res.status(404).json({ message: "item not found" })
+        }
+
+        const existingReview = item.reviews.find((review) => (
+            String(review.user) === String(req.userId)
+            && String(review.order) === String(orderId)
+            && String(review.shopOrderId) === String(shopOrderId)
+        ))
+
+        if (existingReview) {
+            existingReview.rating = rating
+            existingReview.comment = (comment || "").trim()
+            existingReview.reviewedAt = new Date()
+        } else {
+            item.reviews.push({
+                user: req.userId,
+                order: orderId,
+                shopOrderId,
+                rating,
+                comment: (comment || "").trim(),
+                reviewedAt: new Date()
+            })
+        }
+
+        await item.save()
+        const updatedItem = await refreshItemRating(itemId)
+
+        return res.status(200).json({
+            message: "review submitted successfully",
+            review: orderItem.review,
+            rating: updatedItem?.rating || item.rating
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `review error ${error}` })
+    }
+}
+
+export const getAllItems = async (req, res) => {
+    try {
+        const items = await Item.find({}).populate("shop", "name image city")
+        return res.status(200).json(items)
+    } catch (error) {
+        return res.status(500).json({ message: `get all items error ${error}` })
     }
 }

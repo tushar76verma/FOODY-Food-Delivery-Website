@@ -1,155 +1,224 @@
 import React, { useEffect, useRef, useState } from 'react'
-import Nav from './NaV.JSX'
+import Nav from './Nav'
 import { categories } from '../category'
 import CategoryCard from './CategoryCard'
-import { FaCircleChevronLeft } from "react-icons/fa6";
-import { FaCircleChevronRight } from "react-icons/fa6";
+import { FaCircleChevronLeft, FaCircleChevronRight } from "react-icons/fa6";
 import { useSelector } from 'react-redux';
 import FoodCard from './FoodCard';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { serverUrl } from '../App';
+import image1 from '../assets/image1.jpg'
+import image5 from '../assets/image5.jpg'
+import image6 from '../assets/image6.jpg'
+import image11 from '../assets/image11.jpg'
 
 function UserDashboard() {
-  const {currentCity,shopInMyCity,itemsInMyCity,searchItems}=useSelector(state=>state.user)
-  const cateScrollRef=useRef()
-  const shopScrollRef=useRef()
-  const navigate=useNavigate()
-  const [showLeftCateButton,setShowLeftCateButton]=useState(false)
-  const [showRightCateButton,setShowRightCateButton]=useState(false)
-   const [showLeftShopButton,setShowLeftShopButton]=useState(false)
-  const [showRightShopButton,setShowRightShopButton]=useState(false)
-  const [updatedItemsList,setUpdatedItemsList]=useState([])
+  const { currentCity, shopInMyCity, itemsInMyCity } = useSelector(state => state.user)
+  const cateScrollRef = useRef()
+  const shopScrollRef = useRef()
+  const navigate = useNavigate()
+  const [showLeftCateButton, setShowLeftCateButton] = useState(false)
+  const [showRightCateButton, setShowRightCateButton] = useState(false)
+  const [showLeftShopButton, setShowLeftShopButton] = useState(false)
+  const [showRightShopButton, setShowRightShopButton] = useState(false)
+  const [updatedItemsList, setUpdatedItemsList] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState("All")
 
-const handleFilterByCategory=(category)=>{
-if(category=="All"){
-  setUpdatedItemsList(itemsInMyCity)
-}else{
-  const filteredList=itemsInMyCity?.filter(i=>i.category===category)
-  setUpdatedItemsList(filteredList)
-}
-
-}
-
-useEffect(()=>{
-setUpdatedItemsList(itemsInMyCity)
-},[itemsInMyCity])
-
-
-  const updateButton=(ref,setLeftButton,setRightButton)=>{
-const element=ref.current
-if(element){
-setLeftButton(element.scrollLeft>0)
-setRightButton(element.scrollLeft+element.clientWidth<element.scrollWidth)
-
-}
+  const handleFilterByCategory = (category) => {
+    setSelectedCategory(category)
+    if (category == "All") {
+      setUpdatedItemsList(itemsInMyCity)
+    } else {
+      const filteredList = itemsInMyCity?.filter(i => i.category === category)
+      setUpdatedItemsList(filteredList)
+    }
+    document.getElementById("food-items-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-  const scrollHandler=(ref,direction)=>{
-    if(ref.current){
+
+  useEffect(() => {
+    if (selectedCategory === "All") {
+      setUpdatedItemsList(itemsInMyCity)
+    } else {
+      setUpdatedItemsList(itemsInMyCity?.filter(item => item.category === selectedCategory))
+    }
+  }, [itemsInMyCity, selectedCategory])
+
+  const updateButton = (ref, setLeftButton, setRightButton) => {
+    const element = ref.current
+    if (element) {
+      setLeftButton(element.scrollLeft > 0)
+      setRightButton(element.scrollLeft + element.clientWidth < element.scrollWidth)
+    }
+  }
+
+  const scrollHandler = (ref, direction) => {
+    if (ref.current) {
       ref.current.scrollBy({
-        left:direction=="left"?-200:200,
-        behavior:"smooth"
+        left: direction == "left" ? -260 : 260,
+        behavior: "smooth"
       })
     }
   }
 
+  useEffect(() => {
+    const cateElement = cateScrollRef.current
+    const shopElement = shopScrollRef.current
 
-
-
-  useEffect(()=>{
-    if(cateScrollRef.current){
-      updateButton(cateScrollRef,setShowLeftCateButton,setShowRightCateButton)
-      updateButton(shopScrollRef,setShowLeftShopButton,setShowRightShopButton)
-      cateScrollRef.current.addEventListener('scroll',()=>{
-        updateButton(cateScrollRef,setShowLeftCateButton,setShowRightCateButton)
-      })
-      shopScrollRef.current.addEventListener('scroll',()=>{
-         updateButton(shopScrollRef,setShowLeftShopButton,setShowRightShopButton)
-      })
-     
+    const handleCateScroll = () => {
+      updateButton(cateScrollRef, setShowLeftCateButton, setShowRightCateButton)
     }
 
-    return ()=>{cateScrollRef?.current?.removeEventListener("scroll",()=>{
-        updateButton(cateScrollRef,setShowLeftCateButton,setShowRightCateButton)
-      })
-         shopScrollRef?.current?.removeEventListener("scroll",()=>{
-        updateButton(shopScrollRef,setShowLeftShopButton,setShowRightShopButton)
-      })}
+    const handleShopScroll = () => {
+      updateButton(shopScrollRef, setShowLeftShopButton, setShowRightShopButton)
+    }
 
-  },[categories])
+    if (cateElement) {
+      handleCateScroll()
+      cateElement.addEventListener('scroll', handleCateScroll)
+    }
 
+    if (shopElement) {
+      handleShopScroll()
+      shopElement.addEventListener('scroll', handleShopScroll)
+    }
+
+    return () => {
+      cateElement?.removeEventListener("scroll", handleCateScroll)
+      shopElement?.removeEventListener("scroll", handleShopScroll)
+    }
+  }, [])
 
   return (
-    <div className='w-screen min-h-screen flex flex-col gap-5 items-center bg-[#fff9f6] overflow-y-auto'>
+    <div className='w-screen min-h-screen bg-[var(--bg-soft)] text-[var(--slate-black)] overflow-y-auto pt-[92px]'>
       <Nav />
 
-      {searchItems && searchItems.length>0 && (
-        <div className='w-full max-w-6xl flex flex-col gap-5 items-start p-5 bg-white shadow-md rounded-2xl mt-4'>
-<h1 className='text-gray-900 text-2xl sm:text-3xl font-semibold border-b border-gray-200 pb-2'>
-  Search Results
-</h1>
-<div className='w-full h-auto flex flex-wrap gap-6 justify-center'>
-  {searchItems.map((item)=>(
-    <FoodCard data={item} key={item._id}/>
-  ))}
-</div>
+      <section className='w-full bg-[#f4ece8] px-4 pb-10 pt-5 md:px-8 lg:px-12'>
+        <div className='mx-auto max-w-7xl rounded-[36px] bg-[#f8f1ed] px-6 py-8 shadow-[0_20px_55px_rgba(46,51,51,0.12)] md:px-10'>
+          <div className='grid gap-8 lg:grid-cols-[1.15fr_0.85fr]'>
+            <div className='space-y-6'>
+              <div className='space-y-3'>
+                <h1 className='text-4xl font-black leading-tight text-[#1f3a4d] md:text-7xl'>
+                  Your Daily Dose of
+                </h1>
+                <p className='text-5xl font-bold italic text-[#ff7a2f] md:text-7xl'>Delicious</p>
+              </div>
+
+              <div className='flex flex-wrap gap-3 text-sm text-[#334155]'>
+                <div className='flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm'>
+                  <img src={image1} alt="Margarita Pizza" className='h-8 w-8 rounded-full object-cover' />
+                  <span>Margarita Pizza</span>
+                </div>
+                <div className='flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm'>
+                  <img src={image11} alt="Grilled Caesar Salad" className='h-8 w-8 rounded-full object-cover' />
+                  <span>Grilled Caesar Salad</span>
+                </div>
+                <div className='flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm'>
+                  <img src={image5} alt="Burger Bliss Combo" className='h-8 w-8 rounded-full object-cover' />
+                  <span>Burger Bliss Combo</span>
+                </div>
+              </div>
+
+              <div className='grid gap-4 sm:grid-cols-2'>
+                <div className='rounded-[22px] bg-[#f2b78c] p-4'>
+                  
+                  <img src={image6} alt="Best Chef" className='h-40 w-full rounded-[18px] object-cover' />
+                </div>
+                <div className='rounded-[22px] bg-[#c8e6a7] p-4'>
+                  
+                  <img src={image11} alt="Explorer Food" className='h-40 w-full rounded-[18px] object-cover' />
+                </div>
+              </div>
+            </div>
+
+            <div className='flex flex-col items-start justify-between gap-6'>
+              <p className='max-w-xs text-sm font-medium text-[#334155] md:ml-auto'>
+                Discover handcrafted meals made with love. Browse our menu and find your next favorite dish.
+              </p>
+              <img src={image5} alt="Featured Food" className='w-full rounded-[30px] object-cover shadow-lg lg:h-[430px]' />
+            </div>
+          </div>
         </div>
-      )}
+      </section>
 
-      <div className="w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]">
-
-        <h1 className='text-gray-800 text-2xl sm:text-3xl'>Inspiration for your first order</h1>
-        <div className='w-full relative'>
-          {showLeftCateButton &&  <button className='absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={()=>scrollHandler(cateScrollRef,"left")}><FaCircleChevronLeft />
-          </button>}
-         
-
-          <div className='w-full flex overflow-x-auto gap-4 pb-2 ' ref={cateScrollRef}>
+      <section className='mx-auto mt-8 w-full max-w-7xl px-4 md:px-8'>
+        <div className='rounded-[32px] bg-white px-6 py-7 shadow-[0_18px_45px_rgba(20,20,20,0.08)]'>
+          <div className='mb-6 flex items-center justify-between gap-4'>
+            <div>
+              <p className='text-sm font-bold uppercase tracking-[0.25em] text-[var(--teal-dark)]'>Browse Categories</p>
+              <h2 className='text-3xl font-black'>Pick what you are craving</h2>
+            </div>
+            <div className='hidden items-center gap-3 md:flex'>
+              {showLeftCateButton && <button className='flex h-12 w-12 items-center justify-center rounded-full bg-[var(--teal-tint)] text-[var(--teal-dark)] transition hover:bg-[var(--teal-dark)] hover:text-white' onClick={() => scrollHandler(cateScrollRef, "left")}><FaCircleChevronLeft size={20} /></button>}
+              {showRightCateButton && <button className='flex h-12 w-12 items-center justify-center rounded-full bg-[var(--teal-tint)] text-[var(--teal-dark)] transition hover:bg-[var(--teal-dark)] hover:text-white' onClick={() => scrollHandler(cateScrollRef, "right")}><FaCircleChevronRight size={20} /></button>}
+            </div>
+          </div>
+          <div className='flex gap-4 overflow-x-auto pb-2' ref={cateScrollRef}>
             {categories.map((cate, index) => (
-              <CategoryCard name={cate.category} image={cate.image} key={index} onClick={()=>handleFilterByCategory(cate.category)}/>
+              <CategoryCard
+                name={cate.category}
+                image={cate.image}
+                key={index}
+                active={selectedCategory === cate.category}
+                onClick={() => handleFilterByCategory(cate.category)}
+              />
             ))}
           </div>
-          {showRightCateButton &&  <button className='absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={()=>scrollHandler(cateScrollRef,"right")}>
-<FaCircleChevronRight />
-          </button>}
-         
         </div>
-      </div>
+      </section>
 
-      <div className='w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]'>
- <h1 className='text-gray-800 text-2xl sm:text-3xl'>Best Shop in {currentCity}</h1>
- <div className='w-full relative'>
-          {showLeftShopButton &&  <button className='absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={()=>scrollHandler(shopScrollRef,"left")}><FaCircleChevronLeft />
-          </button>}
-         
+      <section className='mx-auto mt-8 w-full max-w-7xl px-4 md:px-8' id="shop-section">
+        <div className='rounded-[32px] bg-[var(--slate-black)] px-6 py-7 text-white shadow-[0_22px_50px_rgba(31,36,49,0.18)]'>
+          <div className='mb-6 flex items-center justify-between gap-4'>
+            <div>
+              <p className='text-sm font-bold uppercase tracking-[0.25em] text-[var(--teal-tint)]'>Nearby Stores</p>
+              <h2 className='text-3xl font-black'>{currentCity ? `Best shops in ${currentCity}` : "Top shops around you"}</h2>
+            </div>
+            <div className='hidden items-center gap-3 md:flex'>
+              {showLeftShopButton && <button className='flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[var(--teal-primary)]' onClick={() => scrollHandler(shopScrollRef, "left")}><FaCircleChevronLeft size={20} /></button>}
+              {showRightShopButton && <button className='flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[var(--teal-primary)]' onClick={() => scrollHandler(shopScrollRef, "right")}><FaCircleChevronRight size={20} /></button>}
+            </div>
+          </div>
 
-          <div className='w-full flex overflow-x-auto gap-4 pb-2 ' ref={shopScrollRef}>
-            {shopInMyCity?.map((shop, index) => (
-              <CategoryCard name={shop.name} image={shop.image} key={index} onClick={()=>navigate(`/shop/${shop._id}`)}/>
+          <div className='flex gap-5 overflow-x-auto pb-2' ref={shopScrollRef}>
+            {shopInMyCity?.map((shop) => (
+              <button key={shop._id} className='group min-w-[280px] overflow-hidden rounded-[28px] bg-white text-left text-[var(--slate-black)] shadow-lg transition hover:-translate-y-1' onClick={() => navigate(`/shop/${shop._id}`)}>
+                <div className='relative h-[190px] overflow-hidden'>
+                  <img src={shop.image} alt={shop.name} className='h-full w-full object-cover transition duration-500 group-hover:scale-105' />
+                  <div className='absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent' />
+                  <p className='absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold tracking-[0.18em] text-[var(--teal-dark)]'>OPEN NOW</p>
+                </div>
+                <div className='space-y-2 p-5'>
+                  <h3 className='text-2xl font-black'>{shop.name}</h3>
+                  <p className='truncate text-sm text-gray-500'>{shop.address}</p>
+                  <div className='flex items-center justify-between pt-2'>
+                    <span className='text-sm font-semibold text-gray-400'>{shop.city}</span>
+                    <span className='text-sm font-bold text-[var(--teal-dark)]'>View Menu</span>
+                  </div>
+                </div>
+              </button>
             ))}
           </div>
-          {showRightShopButton &&  <button className='absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={()=>scrollHandler(shopScrollRef,"right")}>
-<FaCircleChevronRight />
-          </button>}
-         
         </div>
-      </div>
+      </section>
 
-      <div className='w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]'>
-       <h1 className='text-gray-800 text-2xl sm:text-3xl'>
-        Suggested Food Items
-       </h1>
+      <section className='mx-auto mt-8 w-full max-w-7xl px-4 pb-12 md:px-8' id="food-items-section">
+        <div className='rounded-[32px] bg-white px-6 py-7 shadow-[0_18px_45px_rgba(20,20,20,0.08)]'>
+          <div className='mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
+            <div>
+              <p className='text-sm font-bold uppercase tracking-[0.25em] text-[var(--teal-dark)]'>Curated For You</p>
+              <h2 className='text-3xl font-black'>Suggested food items</h2>
+            </div>
+            <p className='text-sm text-gray-500'>
+              Showing {updatedItemsList?.length || 0} items {selectedCategory !== "All" ? `in ${selectedCategory}` : "from all categories"}.
+            </p>
+          </div>
 
-<div className='w-full h-auto flex flex-wrap gap-[20px] justify-center'>
-{updatedItemsList?.map((item,index)=>(
-  <FoodCard key={index} data={item}/>
-))}
-</div>
-
-
-      </div>
-
-
+          <div className='grid gap-5 sm:grid-cols-2 xl:grid-cols-4'>
+            {updatedItemsList?.map((item) => (
+              <FoodCard key={item._id} data={item} />
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

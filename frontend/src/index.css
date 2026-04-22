@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+:root {
+  --teal-primary: #00cbc0;
+  --teal-dark: #009c8e;
+  --slate-black: #2e3333;
+  --bg-soft: #f5f5f5;
+  --card-white: #ffffff;
+  --teal-tint: #e8f9f7;
+}
+
+body {
+  background-color: var(--bg-soft);
+  color: var(--slate-black);
+}
+
 * {
  /* ya scroll */
   scrollbar-width: none; /* Firefox */

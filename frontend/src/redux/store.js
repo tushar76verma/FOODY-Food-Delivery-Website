@@ -7,5 +7,22 @@ export const store=configureStore({
         user:userSlice,
         owner:ownerSlice,
         map:mapSlice
-    }
+    },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+            serializableCheck: {
+                ignoredPaths: ["user.socket"],
+                ignoredActions: ["user/setSocket"]
+            }
+        })
 })
+
+if (typeof window !== "undefined") {
+    store.subscribe(() => {
+        const { cartItems, totalAmount } = store.getState().user
+        window.localStorage.setItem("foody-cart", JSON.stringify({
+            cartItems,
+            totalAmount
+        }))
+    })
+}

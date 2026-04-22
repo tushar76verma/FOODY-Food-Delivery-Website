@@ -4,7 +4,7 @@ import { IoIosArrowRoundBack } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import UserOrderCard from '../components/UserOrderCard';
 import OwnerOrderCard from '../components/OwnerOrderCard';
-import { setMyOrders, updateOrderStatus, updateRealtimeOrderStatus } from '../redux/userSlice';
+import { addMyOrder, updateRealtimeOrderStatus } from '../redux/userSlice';
 
 
 function MyOrders() {
@@ -12,29 +12,36 @@ function MyOrders() {
   const navigate = useNavigate()
 const dispatch=useDispatch()
   useEffect(()=>{
-socket?.on('newOrder',(data)=>{
-if(data.shopOrders?.owner._id==userData._id){
-dispatch(setMyOrders([data,...myOrders]))
-}
-})
+    if (!socket || !userData?._id) {
+      return
+    }
 
-socket?.on('update-status',({orderId,shopId,status,userId})=>{
-if(userId==userData._id){
-  dispatch(updateRealtimeOrderStatus({orderId,shopId,status}))
-}
-})
+    const handleNewOrder = (data) => {
+      if(data.shopOrders?.owner._id==userData._id){
+        dispatch(addMyOrder(data))
+      }
+    }
 
-return ()=>{
-  socket?.off('newOrder')
-  socket?.off('update-status')
-}
-  },[socket])
+    const handleStatusUpdate = ({ orderId, shopId, shopOrderId, status, assignedDeliveryBoy, estimatedDeliveryTime, cancelledAt }) => {
+      if (userData?.role === "user" || userData?.role === "owner" || userData?.role === "deliveryBoy") {
+        dispatch(updateRealtimeOrderStatus({ orderId, shopId, shopOrderId, status, assignedDeliveryBoy, estimatedDeliveryTime, cancelledAt }))
+      }
+    }
+
+    socket.on('newOrder', handleNewOrder)
+    socket.on('update-status', handleStatusUpdate)
+
+    return ()=>{
+      socket.off('newOrder', handleNewOrder)
+      socket.off('update-status', handleStatusUpdate)
+    }
+  },[dispatch, socket, userData?._id])
 
 
 
   
   return (
-    <div className='"w-full min-h-screen bg-[#fff9f6] flex justify-center px-4'>
+    <div className='w-full min-h-screen bg-[#fff9f6] flex justify-center px-4'>
       <div className='w-full max-w-[800px] p-4'>
 
         <div className='flex items-center gap-[20px] mb-6 '>

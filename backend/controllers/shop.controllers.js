@@ -57,3 +57,12 @@ export const getShopByCity=async (req,res) => {
         return res.status(500).json({message:`get shop by city error ${error}`})
     }
 }
+
+export const getAllShops = async (req, res) => {
+    try {
+        const shops = await Shop.find({}).populate("items")
+        return res.status(200).json(shops)
+    } catch (error) {
+        return res.status(500).json({ message: `get all shops error ${error}` })
+    }
+}

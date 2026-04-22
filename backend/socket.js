@@ -1,4 +1,6 @@
 import User from "./models/user.model.js"
+import DeliveryAssignment from "./models/deliveryAssignment.model.js"
+import Order from "./models/order.model.js"
 
 export const socketHandler = (io) => {
   io.on('connection', (socket) => {
@@ -8,6 +10,9 @@ export const socketHandler = (io) => {
         const user = await User.findByIdAndUpdate(userId, {
           socketId: socket.id, isOnline: true
         }, { new: true })
+        if (user) {
+          socket.join(`user:${userId}`)
+        }
       } catch (error) {
         console.log(error)
       }
@@ -26,11 +31,32 @@ export const socketHandler = (io) => {
         })
 
         if (user) {
-          io.emit('updateDeliveryLocation',{
-            deliveryBoyId:userId,
-            latitude,
-            longitude
+          const assignments = await DeliveryAssignment.find({
+            assignedTo: userId,
+            status: "assigned"
           })
+
+          for (const assignment of assignments) {
+            const order = await Order.findById(assignment.order).select("user shopOrders")
+            if (!order) {
+              continue
+            }
+
+            const shopOrder = order.shopOrders.id(assignment.shopOrderId)
+            const roomIds = [String(order.user)]
+
+            if (shopOrder?.owner) {
+              roomIds.push(String(shopOrder.owner))
+            }
+
+            roomIds.forEach((roomId) => {
+              io.to(`user:${roomId}`).emit('updateDeliveryLocation', {
+                deliveryBoyId: userId,
+                latitude,
+                longitude
+              })
+            })
+          }
         }
 
 

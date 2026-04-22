@@ -12,10 +12,9 @@ import { ClipLoader } from 'react-spinners';
 import { useDispatch } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
 function SignIn() {
-    const primaryColor = "#ff4d2d";
-    const hoverColor = "#e64323";
-    const bgColor = "#fff9f6";
-    const borderColor = "#ddd";
+    const primaryColor = "#009C8E";
+    const bgColor = "#F5F5F5";
+    const borderColor = "#E5E7EB";
     const [showPassword, setShowPassword] = useState(false)
     const navigate=useNavigate()
     const [email,setEmail]=useState("")
@@ -23,30 +22,40 @@ function SignIn() {
     const [err,setErr]=useState("")
     const [loading,setLoading]=useState(false)
     const dispatch=useDispatch()
+    
      const handleSignIn=async () => {
         setLoading(true)
+        setErr("")
         try {
             const result=await axios.post(`${serverUrl}/api/auth/signin`,{
                 email,password
             },{withCredentials:true})
            dispatch(setUserData(result.data))
-            setErr("")
-            setLoading(false)
         } catch (error) {
-           setErr(error?.response?.data?.message)
-           setLoading(false)
+           const fallbackMessage = typeof error?.response?.data === "string"
+            ? error.response.data
+            : error?.response?.data?.message
+           setErr(fallbackMessage || "unable to sign in right now")
+        } finally {
+          setLoading(false)
         }
      }
-     const handleGoogleAuth=async () => {
-             const provider=new GoogleAuthProvider()
-             const result=await signInWithPopup(auth,provider)
+      const handleGoogleAuth=async () => {
        try {
-         const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
-             email:result.user.email,
-         },{withCredentials:true})
-         dispatch(setUserData(data))
+              setErr("")
+              const provider=new GoogleAuthProvider()
+              const result=await signInWithPopup(auth,provider)
+              const idToken = await result.user.getIdToken()
+          const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
+              email:result.user.email,
+              idToken
+          },{withCredentials:true})
+          dispatch(setUserData(data))
        } catch (error) {
-         console.log(error)
+          const fallbackMessage = typeof error?.response?.data === "string"
+            ? error.response.data
+            : error?.response?.data?.message
+          setErr(fallbackMessage || "google sign in failed")
        }
           }
     return (
@@ -54,7 +63,7 @@ function SignIn() {
             <div className={`bg-white rounded-xl shadow-lg w-full max-w-md p-8 border-[1px] `} style={{
                 border: `1px solid ${borderColor}`
             }}>
-                <h1 className={`text-3xl font-bold mb-2 `} style={{ color: primaryColor }}>Vingo</h1>
+                <h1 className={`text-3xl font-bold mb-2 `} style={{ color: primaryColor }}>Foody</h1>
                 <p className='text-gray-600 mb-8'> Sign In to your account to get started with delicious food deliveries
                 </p>
 
@@ -63,7 +72,7 @@ function SignIn() {
 
                 <div className='mb-4'>
                     <label htmlFor="email" className='block text-gray-700 font-medium mb-1'>Email</label>
-                    <input type="email" className='w-full border rounded-lg px-3 py-2 focus:outline-none ' placeholder='Enter your Email' style={{ border: `1px solid ${borderColor}` }} onChange={(e)=>setEmail(e.target.value)} value={email} required/>
+                    <input type="email" className='w-full border rounded-lg px-3 py-2 focus:outline-none ' placeholder='Enter your registered email' style={{ border: `1px solid ${borderColor}` }} onChange={(e)=>setEmail(e.target.value)} value={email} required/>
                 </div>
                 {/* password*/}
 
@@ -75,12 +84,12 @@ function SignIn() {
                         <button className='absolute right-3 cursor-pointer top-[14px] text-gray-500' onClick={() => setShowPassword(prev => !prev)}>{!showPassword ? <FaRegEye /> : <FaRegEyeSlash />}</button>
                     </div>
                 </div>
-                <div className='text-right mb-4 cursor-pointer text-[#ff4d2d] font-medium' onClick={()=>navigate("/forgot-password")}>
+                <div className='text-right mb-4 cursor-pointer text-[var(--teal-dark)] font-medium' onClick={()=>navigate("/forgot-password")}>
                   Forgot Password
                 </div>
               
 
-            <button className={`w-full font-semibold py-2 rounded-lg transition duration-200 bg-[#ff4d2d] text-white hover:bg-[#e64323] cursor-pointer`} onClick={handleSignIn} disabled={loading}>
+            <button className='w-full font-semibold py-2 rounded-lg transition duration-200 bg-[var(--teal-dark)] text-white hover:bg-[var(--teal-primary)] cursor-pointer' onClick={handleSignIn} disabled={loading}>
                 {loading?<ClipLoader size={20} color='white'/>:"Sign In"}
             </button>
       {err && <p className='text-red-500 text-center my-[10px]'>*{err}</p>}
@@ -89,7 +98,7 @@ function SignIn() {
 <FcGoogle size={20}/>
 <span>Sign In with Google</span>
             </button>
-            <p className='text-center mt-6 cursor-pointer' onClick={()=>navigate("/signup")}>Want to create a new account ?  <span className='text-[#ff4d2d]'>Sign Up</span></p>
+            <p className='text-center mt-6 cursor-pointer' onClick={()=>navigate("/signup")}>Want to create a new account ?  <span className='text-[var(--teal-dark)]'>Sign Up</span></p>
             </div>
         </div>
     )

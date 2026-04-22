@@ -8,7 +8,23 @@ const shopOrderItemSchema = new mongoose.Schema({
     },
     name:String,
     price:Number,
-    quantity:Number
+    quantity:Number,
+    review: {
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5,
+            default: null
+        },
+        comment: {
+            type: String,
+            default: ""
+        },
+        reviewedAt: {
+            type: Date,
+            default: null
+        }
+    }
 }, { timestamps: true })
 
 const shopOrderSchema = new mongoose.Schema({
@@ -24,7 +40,7 @@ const shopOrderSchema = new mongoose.Schema({
     shopOrderItems: [shopOrderItemSchema],
     status:{
         type:String,
-        enum:["pending","preparing","out of delivery","delivered"],
+        enum:["pending","accepted","preparing","out of delivery","picked up","delivered","cancelled"],
         default:"pending"
     },
   assignment:{
@@ -45,6 +61,27 @@ otpExpires:{
         default:null
     },
 deliveredAt:{
+    type:Date,
+    default:null
+},
+acceptedAt:{
+    type:Date,
+    default:null
+},
+pickedUpAt:{
+    type:Date,
+    default:null
+},
+cancelledAt:{
+    type:Date,
+    default:null
+},
+cancelledBy:{
+    type:String,
+    enum:["user","owner",null],
+    default:null
+},
+estimatedDeliveryTime:{
     type:Date,
     default:null
 }

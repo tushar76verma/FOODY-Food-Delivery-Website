@@ -20,6 +20,15 @@ export const sendOtpMail=async (to,otp) => {
     })
 }
 
+export const sendSignupOtpMail = async (to, otp) => {
+    await transporter.sendMail({
+        from: process.env.EMAIL,
+        to,
+        subject: "Verify Your Foody Account",
+        html: `<p>Your OTP for account verification is <b>${otp}</b>. It expires in 5 minutes.</p>`
+    })
+}
+
 
 export const sendDeliveryOtpMail=async (user,otp) => {
     await transporter.sendMail({

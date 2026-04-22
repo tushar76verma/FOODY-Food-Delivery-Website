@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { type } from "os";
 
 const userSchema = new mongoose.Schema({
     fullName: {
@@ -10,6 +9,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique:true
+    },
+    loginId: {
+        type: String,
+        unique: true,
+        sparse: true
     },
     password:{
         type: String,
@@ -26,12 +30,22 @@ const userSchema = new mongoose.Schema({
     resetOtp:{
         type:String
     },
+    signupOtp: {
+        type: String
+    },
     isOtpVerified:{
         type:Boolean,
         default:false
     },
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
     otpExpires:{
         type:Date
+    },
+    signupOtpExpires: {
+        type: Date
     },
     socketId:{
      type:String,

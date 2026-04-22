@@ -20,11 +20,13 @@ const itemSchema = new mongoose.Schema({
             "Desserts",
             "Pizza",
             "Burgers",
+            "Drinks",
             "Sandwiches",
             "South Indian",
             "North Indian",
             "Chinese",
             "Fast Food",
+            "Drinks",
             "Others"
         ],
         required:true
@@ -42,7 +44,35 @@ const itemSchema = new mongoose.Schema({
    rating:{
     average:{type:Number,default:0},
     count:{type:Number,default:0}
-   }
+   },
+   reviews:[
+    {
+        user:{
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"User"
+        },
+        order:{
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"Order"
+        },
+        shopOrderId:{
+            type:mongoose.Schema.Types.ObjectId
+        },
+        rating:{
+            type:Number,
+            min:1,
+            max:5
+        },
+        comment:{
+            type:String,
+            default:""
+        },
+        reviewedAt:{
+            type:Date,
+            default:Date.now
+        }
+    }
+   ]
 }, { timestamps: true })
 
 const Item=mongoose.model("Item",itemSchema)

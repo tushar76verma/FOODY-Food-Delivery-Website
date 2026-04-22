@@ -1,4 +1,27 @@
-import { createSlice, current } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+
+const loadStoredCartState = () => {
+  if (typeof window === "undefined") {
+    return { cartItems: [], totalAmount: 0 }
+  }
+
+  try {
+    const storedCart = window.localStorage.getItem("foody-cart")
+    if (!storedCart) {
+      return { cartItems: [], totalAmount: 0 }
+    }
+
+    const parsedCart = JSON.parse(storedCart)
+    const cartItems = Array.isArray(parsedCart.cartItems) ? parsedCart.cartItems : []
+    const totalAmount = Number(parsedCart.totalAmount) || cartItems.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0)
+
+    return { cartItems, totalAmount }
+  } catch (error) {
+    return { cartItems: [], totalAmount: 0 }
+  }
+}
+
+const persistedCartState = loadStoredCartState()
 
 const userSlice = createSlice({
   name: "user",
@@ -9,8 +32,8 @@ const userSlice = createSlice({
     currentAddress: null,
     shopInMyCity: null,
     itemsInMyCity: null,
-    cartItems: [],
-    totalAmount: 0,
+    cartItems: persistedCartState.cartItems,
+    totalAmount: persistedCartState.totalAmount,
     myOrders: [],
     searchItems: null,
     socket: null
@@ -33,6 +56,44 @@ const userSlice = createSlice({
     },
     setItemsInMyCity: (state, action) => {
       state.itemsInMyCity = action.payload
+    },
+    updateItemReviewInLists: (state, action) => {
+      const { itemId, review, rating } = action.payload
+
+      const patchItem = (item) => {
+        if (!item || item._id != itemId) {
+          return item
+        }
+
+        const nextReviews = Array.isArray(item.reviews) ? [...item.reviews] : []
+        const existingReviewIndex = nextReviews.findIndex((entry) => (
+          String(entry.order) === String(review.order)
+          && String(entry.shopOrderId) === String(review.shopOrderId)
+        ))
+
+        if (existingReviewIndex >= 0) {
+          nextReviews[existingReviewIndex] = {
+            ...nextReviews[existingReviewIndex],
+            ...review
+          }
+        } else {
+          nextReviews.push(review)
+        }
+
+        return {
+          ...item,
+          reviews: nextReviews,
+          rating: rating || item.rating
+        }
+      }
+
+      if (Array.isArray(state.itemsInMyCity)) {
+        state.itemsInMyCity = state.itemsInMyCity.map(patchItem)
+      }
+
+      if (Array.isArray(state.searchItems)) {
+        state.searchItems = state.searchItems.map(patchItem)
+      }
     },
     setSocket: (state, action) => {
       state.socket = action.payload
@@ -70,6 +131,11 @@ const userSlice = createSlice({
       state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
     },
 
+    clearCart: (state) => {
+      state.cartItems = []
+      state.totalAmount = 0
+    },
+
     setMyOrders: (state, action) => {
       state.myOrders = action.payload
     },
@@ -78,25 +144,47 @@ const userSlice = createSlice({
     }
 
     ,
-    updateOrderStatus: (state, action) => {
-      const { orderId, shopId, status } = action.payload
+    patchShopOrder: (state, action) => {
+      const { orderId, shopId, shopOrderId, patch } = action.payload
       const order = state.myOrders.find(o => o._id == orderId)
-      if (order) {
-        if (order.shopOrders && order.shopOrders.shop._id == shopId) {
-          order.shopOrders.status = status
+      if (!order) {
+        return
+      }
+
+      if (Array.isArray(order.shopOrders)) {
+        const shopOrder = order.shopOrders.find((so) => (
+          (shopOrderId && so._id == shopOrderId) || (shopId && so.shop._id == shopId)
+        ))
+        if (shopOrder) {
+          Object.assign(shopOrder, patch)
         }
+        return
+      }
+
+      if (order.shopOrders && ((shopOrderId && order.shopOrders._id == shopOrderId) || (shopId && order.shopOrders.shop._id == shopId))) {
+        Object.assign(order.shopOrders, patch)
       }
     },
 
-    updateRealtimeOrderStatus: (state, action) => {
-      const { orderId, shopId, status } = action.payload
-      const order = state.myOrders.find(o => o._id == orderId)
-      if (order) {
-        const shopOrder = order.shopOrders.find(so => so.shop._id == shopId)
-        if (shopOrder) {
-          shopOrder.status = status
+    updateOrderStatus: (state, action) => {
+      const { orderId, shopId, shopOrderId, status, assignedDeliveryBoy, estimatedDeliveryTime, cancelledAt } = action.payload
+      userSlice.caseReducers.patchShopOrder(state, {
+        payload: {
+          orderId,
+          shopId,
+          shopOrderId,
+          patch: {
+            status,
+            ...(assignedDeliveryBoy !== undefined ? { assignedDeliveryBoy } : {}),
+            ...(estimatedDeliveryTime !== undefined ? { estimatedDeliveryTime } : {}),
+            ...(cancelledAt !== undefined ? { cancelledAt } : {})
+          }
         }
-      }
+      })
+    },
+
+    updateRealtimeOrderStatus: (state, action) => {
+      userSlice.caseReducers.updateOrderStatus(state, action)
     },
 
     setSearchItems: (state, action) => {
@@ -105,5 +193,5 @@ const userSlice = createSlice({
   }
 })
 
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket ,updateRealtimeOrderStatus} = userSlice.actions
+export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, updateItemReviewInLists, addToCart, updateQuantity, removeCartItem, clearCart, setMyOrders, addMyOrder, patchShopOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket ,updateRealtimeOrderStatus} = userSlice.actions
 export default userSlice.reducer
