@@ -1,4 +1,12 @@
-<img width="1919" height="994" alt="Screenshot 2026-04-18 100115" src="https://github.com/user-attachments/assets/689e0171-7ccb-4d91-8c21-0c6ce33da2b0" /># 🍕 FOODY - Food Delivery Website
+<img width="1920" height="1200" alt="Screenshot 2026-04-18 095939" src="https://github.com/user-attachments/assets/fe44e2fb-0c81-4070-b4a8-eea2a9f952f3" />
+<img width="1586" height="940" alt="Screenshot 2026-04-18 100038" src="https://github.com/user-attachments/assets/a57f3889-dd38-40ec-811a-90db20c189ba" />
+
+<img width="1919" height="994" alt="Screenshot 2026-04-18 100115" src="https://github.com/user-attachments/assets/689e0171-7ccb-4d91-8c21-0c6ce33da2b0" />
+<img width="1828" height="975" alt="Screenshot 2026-04-22 114722" src="https://github.com/user-attachments/assets/21f0d2af-a441-428d-8886-cfb8793faa9f" />
+<img width="1794" height="991" alt="Screenshot 2026-04-22 115629" src="https://github.com/user-attachments/assets/9368e1ba-67fa-4c6d-a891-03275b5d1c2e" />
+
+
+# 🍕 FOODY - Food Delivery Website
 
 A modern full-stack food delivery web application built using the MERN stack. FOODY allows users to browse food items, manage carts, and place orders through a smooth and responsive interface.
 
